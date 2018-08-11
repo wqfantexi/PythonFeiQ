@@ -1,6 +1,9 @@
 from LogHelp import logger
 import IPMSG
-
+from enum import Enum
+import time
+import datetime
+import setting
 # 定义UDP报文数据结构
 class UdpPacketData:
     PACKETCOUNT = 0  # 定义报文数量,静态全局变量
@@ -34,6 +37,9 @@ class UdpPacketData:
             self.ip = addr[0]  # IP地址
             self.port = addr[1]  # 端口号
             self.data = data  # 数据报文
+    #获取用户的ID
+    def getUserId(self):
+        return self.ip + self.port
 
     #发送时调用的构造函数
     def createSendPacket(self):
@@ -60,7 +66,12 @@ class UdpPacketData:
         self.cmd = int(arrBytes[4].decode(IPMSG.ENCODETYPE))
 
         if len(arrBytes) > 5:
-            self.extra = IPMSG.PACKET_SEP.join(arrBytes[5:])
+            tmpExtra = IPMSG.PACKET_SEP.join(arrBytes[5:])
+            lastIndex = tmpExtra.rfind(b'\0')
+            if lastIndex != -1:
+                self.extra = tmpExtra[:lastIndex]
+            else:
+                self.extra = tmpExtra
 
     def save(self):
         self.data = IPMSG.PACKET_SEP.join([
@@ -69,8 +80,10 @@ class UdpPacketData:
             self.loginname.encode(IPMSG.ENCODETYPE),
             self.hostname.encode(IPMSG.ENCODETYPE),
             str(self.cmd).encode(IPMSG.ENCODETYPE),
-            self.extra
+            self.extra + b'\0'#最后一位必须为0
         ])
+
+
 
 # 飞秋好友定义
 class User:
@@ -82,7 +95,10 @@ class User:
     hostname = ''  # 电脑主机名
     nickname = ''  # 用户设置昵称
     groupname = '' # 分组名
+    headpic = 'static\\headpic\\001.bmp'
+    state = setting.FRIEND_ONLINE
 
+    lstContents = None #聊天记录
 
     def __init__(self,packet:UdpPacketData = None):
         if packet is None:
@@ -92,6 +108,8 @@ class User:
         self.mac = packet.mac
         self.loginname = packet.loginname
         self.hostname = packet.hostname
+
+        self.lstContents = []
 
     def saveToPacket(self, packet:UdpPacketData):
         packet.ip = self.ip
@@ -103,7 +121,7 @@ class User:
         packet.groupname = self.groupname
 
     def getId(self):
-        return self.mac + self.port
+        return self.ip + '@' + str(self.port)
 
     def __str__(self):
         return self.loginname + '@' + self.hostname + '#' + self.groupname
@@ -121,7 +139,38 @@ class User:
         if len(user.groupname) > 0:
             self.groupname = user.groupname
 
+class ContentType(Enum):
+    UNKNOWN = 0
+    TEXT = 1
+    KNOCK = 2
+
 #报文内容
 class PacketContent:
+    def __init__(self, type, peer, bIsSend):
+        self.type = type
+        self.peer = peer #对端ID
+        self.tx = bIsSend
+        self.time = datetime.datetime.now()
+
+    def __repr__(self):
+        return 'PacketContent(peer=%s)'%(self.peer)
+
+# 文本内容
+class TextContent(PacketContent):
+    def __init__(self, text, format, peer, tx):
+        PacketContent.__init__(self, ContentType.TEXT, peer, tx)
+        self.text = text
+        self.format = format
+
+    def __repr__(self):
+        return 'TextContent(text=%s\tformat=%s)'%(self.text,self.format)
+
+#用户发来的数据报文
+class Message:
     def __init__(self):
-        pass
+        self.friend = User()
+        self.cmd = 0 #命令ID
+        self.extra = b'' #数据内容
+        self.packno = 0 #当前数据包的报文号
+        self.contents=[] #内部存储PacketContent
+

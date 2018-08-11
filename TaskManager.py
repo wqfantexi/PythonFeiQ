@@ -18,6 +18,7 @@ class Task:
     # 设置可以执行了
     def SetCanExecute(self):
         self.__IsCanExecute = True
+        self.deadline += 1000 * 60 * 60 #防止刚好差一点时间被执行错了
 
     # 是立即执行的任务还是到期执行的任务
     # iWaitMillsecond = 0，线程空闲立即执行
@@ -35,8 +36,11 @@ class Task:
         return self.taskname + '@' +self.key
 
     def Execute(self):
-        if self.execute_handler is not None:
-            self.execute_handler()
+        try:
+            if self.execute_handler is not None:
+                self.execute_handler()
+        except Exception as ex:
+            logger.debug(ex)
 
 #到期执行一种任务，如果提前执行的情况，执行另外一种任务
 class SwitchTask(Task):
@@ -50,10 +54,14 @@ class SwitchTask(Task):
 
     #到期前执行一个，如果到期执行另外一个
     def Execute(self):
-        if self.before_handler is not None and time.time() < self.deadline:
-            self.before_handler()
-        else:
-            self.afert_handler()
+        try:
+            nowTime = time.time() * 1000
+            if self.before_handler is not None and  nowTime < self.deadline:
+                self.before_handler()
+            else:
+                self.afert_handler()
+        except Exception as ex:
+            logger.debug(ex)
 
 class TaskManager:
     CollectionLock:threading.Lock = threading.Lock()  # 容器锁
@@ -109,7 +117,7 @@ class TaskManager:
     #移除不需要执行的任务
     def EraseReleateTask(self, strKey):
         if self.CollectionLock.acquire():
-            ret = [x for x in self.ListTask if x.IsCanExecute()]
+            ret = [x for x in self.ListTask if x.IsReleateTask(strKey)]
             for x in ret:
                 self.ListTask.remove(x)
 
@@ -117,13 +125,19 @@ class TaskManager:
 
     #设置这些任务可以直接执行
     def SetReleateTaskRun(self, strKey):
+        bHasTask = False
         if self.CollectionLock.acquire():
-            ret = [x for x in self.ListTask if x.IsCanExecute()]
+            ret = [x for x in self.ListTask if x.IsReleateTask(strKey)]
+            bHasTask = len(ret) > 0
             for x in ret:
                 x.SetCanExecute()
 
             self.CollectionLock.release()
 
+        if bHasTask:
+            self.condition.acquire()
+            self.condition.notify()
+            self.condition.release()
     #线程函数
     def thread_func(self):
         logger.debug('任务线程启动')
@@ -144,6 +158,7 @@ class TaskManager:
     def AppendTask(self,task):
         if self.CollectionLock.acquire():
             self.ListTask.append(task)
+            logger.debug('添加任务:%s'%task)
             self.CollectionLock.release()
 
         self.condition.acquire()
@@ -174,13 +189,15 @@ class TaskManager:
         self.CreateDelayTask(func, 0, taskname, taskKey)
 
     #批量创建延时任务
-    def BatchCreateDelayTask(self, func,taskKey, taskname, iStartDelay, iDelayStep, iCount):
+    def BatchCreateDelayTask(self, func, taskKey, taskname, iStartDelay, iDelayStep, iCount):
         if iCount < 1:
             return
 
         arrTask = []
         for x in range(iCount):
-            arrTask.append(Task(func, taskKey, iStartDelay + x * iDelayStep, taskname + '_' + str(x)))
+            t= Task(taskKey, iStartDelay + x * iDelayStep, taskname + '_' + str(x))
+            t.execute_handler = func
+            arrTask.append(t)
 
         self.BatchAppendTask(arrTask)
 
@@ -191,3 +208,6 @@ class TaskManager:
         task.afert_handler = afert_func
 
         self.AppendTask(task)
+
+
+#TaskInstance = TaskManager()

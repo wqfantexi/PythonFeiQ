@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="toolbutton">
+    <file>Static/resource/emoji.png</file>
+    <file>Static/resource/image.png</file>
+  </qresource>
+</RCC>

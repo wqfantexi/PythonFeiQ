@@ -1,0 +1,151 @@
+body{
+    background-color:lightgray;
+}
+img {
+    max-width: 100px;
+    max-height: 100px;
+    margin: 0 0;
+}
+
+/*定义显示的格式*/
+p {
+    color: black;
+    font-family: "Arial", "san-serif";
+    font-size: 24px;
+    display: inline;
+}
+
+/*自己的消息*/
+.myMsg {
+    max-height: 300px;
+    max-width: 300px;
+    position: relative;
+    float: right;
+
+}
+
+/*显示自己的头像*/
+.divMyHead {
+    position: relative;
+    float: right;
+    margin: 5px 0px 5px 0px;
+    right: 1px;
+    border-radius: 5px;
+}
+
+/*对方的消息*/
+.otherMsg {
+    max-height: 300px;
+    max-width: 300px;
+    position: relative;
+    float: right;
+}
+
+/*显示对方的头像*/
+.divotherHead {
+    position: relative;
+    float: left;
+    margin: 5px 0px 0px 0px;
+    left: 1px;
+    border-radius: 5px;
+}
+
+/*实现对方发送来的消息的方框*/
+.triangle-left {
+    float: left;
+    max-width: 60%;
+    border: 1px solid #ffffff;
+    border-radius: 5px;
+    padding: 4px;
+    background: #ffffff;
+    position: relative;
+    display: inline-block;
+    margin: 15px 0px 5px 20px;
+    word-wrap: break-word;
+}
+
+.triangle-left:before {
+    position: absolute;
+    content: "";
+    display: block;
+}
+
+/*实现对方消息的那个小三角，小三角的实现其实是将一个正方形对角线划分为四个小三角，其余的三个设置颜色不可见，只将对自己有用的那一个留下来*/
+.triangle-left.left:before {
+    border-color: rgba(0, 0, 0, 0) #ffffff rgba(0, 0, 0, 0) rgba(0, 0, 0, 0);
+    border-width: 5px 5px 5px 0;
+    border-style: solid;
+    bottom: auto;
+    left: -5px;
+    top: 8px;
+}
+
+.triangle-left.left:after {
+    border-color: rgba(0, 0, 0, 0) #ffffff rgba(0, 0, 0, 0) rgba(0, 0, 0, 0);
+    border-width: 5px 5px 5px 0;
+    border-style: solid;
+    bottom: auto;
+    left: -5px;
+    top: 8px;
+}
+
+/*实现右边的气泡*/
+.triangle-right {
+    float: right;
+    max-width: 60%;
+    border: 1px solid #b2e281;
+    border-radius: 5px;
+    padding: 5px;
+    background: #b2e281;
+    position: relative;
+    display: inline-block;
+    margin: 15px 20px 5px 0;
+    word-wrap: break-word;
+    background-color: #b2e281;
+}
+
+.triangle-right:before {
+    position: absolute;
+    content: "";
+    display: block;
+}
+
+.triangle-right.right:before {
+    border-color: rgba(0, 0, 0, 0) rgba(0, 0, 0, 0) rgba(0, 0, 0, 0) #b2e281;
+    border-width: 5px 0px 5px 5px;
+    border-style: solid;
+    bottom: auto;
+    right: -6px;
+    top: 8px;
+}
+
+.triangle-right:after {
+    position: absolute;
+    content: "";
+    display: block;
+}
+
+.triangle-right.right:after {
+    border-color: rgba(0, 0, 0, 0) rgba(0, 0, 0, 0) rgba(0, 0, 0, 0) #b2e281;
+    border-width: 5px 0px 5px 5px;
+    border-style: solid;
+    bottom: auto;
+    right: -6px;
+    top: 8px;
+}
+
+.chat-notice {
+    clear: both;
+    font-size: 70%;
+    color: white;
+    text-align: center;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+.chat-notice span {
+    background-color: #aeaeae;
+    line-height: 25px;
+    border-radius: 5px;
+    padding: 5px 10px;
+}
